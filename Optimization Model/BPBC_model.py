@@ -292,7 +292,7 @@ class PerfOpt:
         #example ->[2701.49804286  499.40599029 2101.97484571]
         
         #least criticle->return min (rt * prob) of simple paths 
-        
+        # print(tp_list, rt_list, prrt_list)
         if (leastCritical):
             PRCP = np.argsort(prrt_list)[order]
             
@@ -498,7 +498,7 @@ class PerfOpt:
             target_changes += str(target_mem)
             target_changes += ' '
             target_changes += target_mem_type
-            target_changes += ",  " 
+            target_changes += " " 
 
             
             self.update_App_workflow_mem_rt(self.App, {target_node: target_mem}, target_mem_type, True)
