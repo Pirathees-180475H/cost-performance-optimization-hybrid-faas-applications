@@ -292,7 +292,7 @@ class PerfOpt:
         #example ->[2701.49804286  499.40599029 2101.97484571]
         
         #least criticle->return min (rt * prob) of simple paths 
-        
+        # print(tp_list, rt_list, prrt_list)
         if (leastCritical):
             PRCP = np.argsort(prrt_list)[order]
             
@@ -340,26 +340,60 @@ class PerfOpt:
         print("###########____Cost_Performance ConstraintModel Initiated____###########")
         # self.drawGraph(App.workflowG)
         # Update memory of each node based on log data
+
+        print('$$$$$$$$$$$$$$$$$$')
+        print()
+        print('rt_constraint', rt_constraint)
+        print('budget', cost_constraint)
+        print("Private minimal memory config", "RT: ", self.private_maximal_avg_rt, "Cost: ", self.private_minimal_cost)
+        print("Private maximal memory config", "RT: ", self.private_minimal_avg_rt, "Cost: ", self.private_maximal_cost)
+        print("Public minimal memory config", "RT: ", self.public_maximal_avg_rt, "Cost: ", self.public_minimal_cost)
+        print("Public maximal memory config", "RT: ", self.public_minimal_avg_rt, "Cost: ", self.public_maximal_cost)
+        print()
+        print('$$$$$$$$$$$$$$$$$$')
+        print()
+
+
         self.update_available_mem_list()
+        
+        # identify starting config
+        # normalized_mem_config, normalized_mem_config_type = 
+        max_rt_for_norm = max(self.private_maximal_avg_rt, self.private_minimal_avg_rt, self.public_maximal_avg_rt, self.public_minimal_avg_rt)
+        min_rt_for_norm = min(self.private_maximal_avg_rt, self.private_minimal_avg_rt, self.public_maximal_avg_rt, self.public_minimal_avg_rt)
+        max_cost_for_norm = max(self.private_maximal_cost, self.private_minimal_cost, self.public_maximal_cost, self.public_minimal_cost)
+        min_cost_for_norm = min(self.private_maximal_cost, self.private_minimal_cost, self.public_maximal_cost, self.public_minimal_cost)
+
+        # print(max_rt_for_norm, min_rt_for_norm, max_cost_for_norm, min_cost_for_norm)
+        private_maximal_norm = (self.private_maximal_avg_rt - min_rt_for_norm) / (max_rt_for_norm - min_rt_for_norm) + (self.private_maximal_cost - min_cost_for_norm) / (max_cost_for_norm - min_cost_for_norm)
+        private_minimal_norm = (self.private_minimal_avg_rt - min_rt_for_norm) / (max_rt_for_norm - min_rt_for_norm) + (self.private_minimal_cost - min_cost_for_norm) / (max_cost_for_norm - min_cost_for_norm)
+
+        public_maximal_norm = (self.public_maximal_avg_rt - min_rt_for_norm) / (max_rt_for_norm - min_rt_for_norm) + (self.public_maximal_cost - min_cost_for_norm) / (max_cost_for_norm - min_cost_for_norm)
+        public_minimal_norm = (self.public_minimal_avg_rt - min_rt_for_norm) / (max_rt_for_norm - min_rt_for_norm) + (self.public_minimal_cost - min_cost_for_norm) / (max_cost_for_norm - min_cost_for_norm)
+
+        print(private_maximal_norm, private_minimal_norm, public_maximal_norm, public_minimal_norm)
+        # output   1.0111989070696248   0.056444628672666405   1.471777685663667   0.3861949028307793
+        
+        #lets take public maximal mem config as starting point
+
+        print()
+
         
         #Configure AppWorkFlow to Max_memory Configuration -> so RT is minimal
         self.update_App_workflow_mem_rt(self.App, self.public_maximal_mem_configuration, "public", True)
         current_avg_rt = self.public_minimal_avg_rt
+        current_avg_cost = self.public_maximal_cost
         # cost_public_maximal_mem_configuration = self.public_maximal_cost 
         print("current_avg_rt", current_avg_rt)
-        #Current cost is the Maximal Cost Because We used Max Memory Configuration for each Node
-        current_cost = self.public_maximal_cost
-        print("current_cost", current_cost)
         
         #Nigotiatable RT
         performance_surplus = rt_constraint - current_avg_rt
+        cost_surplus = current_avg_cost - cost_constraint
         # cost_surplus = cost_public_maximal_mem_configuration - cost_constraint
         print("performance_surplus", performance_surplus)
 
-        cost_surplus = current_cost - cost_constraint
-        # cost_surplus = cost_public_maximal_mem_configuration - cost_constraint
-        print("cost_surplus", cost_surplus)
-
+        #Current cost is the Maximal Cost Because We used Max Memory Configuration for each Node
+        current_cost = self.public_maximal_cost
+        print("current_cost", current_cost)
         
         last_e2ert_cost_BCR = 0
         order = 0
@@ -369,52 +403,35 @@ class PerfOpt:
         # print('--------------------Before Going While Loop------------------------------------')
         # self.drawGraph(App.workflowG)
         #Until Negotiatable RT get finished
-        while (round(performance_surplus, 4) >= 0):
+        while (round(performance_surplus, 4) >= 0 and round(cost_surplus, 4) >= 0):
             iterations_count += 1
+
             print("$$$$$$$$$$$$$$$$$$$$$$$$$$$------iterations_count", iterations_count)
-
-            critical_path_perf = self.find_PRCP(iterations_count,leastCritical=True, order=order)    #Criticle Path ->least criticle -simple path with min RTofpath*Pb of path
-            print("critical_path_perf: ", critical_path_perf)
-
-            critical_path_cost = self.find_PRCP(iterations_count,leastCritical=False, order=order)    
-            print("critical_path_cost: ", critical_path_cost)
-
-            max_reduction_of_each_node = {}
-
-            self.update_App_workflow_mem_rt(self.App, self.public_maximal_mem_configuration, "public", True)
-            mem_backup_public_maximal_mem_configuration = nx.get_node_attributes(self.App.workflowG, 'mem')
-            mem_backupType_public_maximal_mem_configuration = nx.get_node_attributes(self.App.workflowG, 'config_type')
-
-            self.update_App_workflow_mem_rt(self.App, self.private_minimal_mem_configuration, "private", True)
-            mem_backup_private_minimal_mem_configuration = nx.get_node_attributes(self.App.workflowG, 'mem')
-            mem_backupType_private_minimal_mem_configuration = nx.get_node_attributes(self.App.workflowG, 'config_type')
-            
+            critical_path = self.find_PRCP(iterations_count,leastCritical=True, order=order)    #Criticle Path ->least criticle -simple path with min RTofpath*Pb of path
+            print("critical_path", critical_path)
+            max_cost_reduction_of_each_node = {}
+            mem_backup = nx.get_node_attributes(self.App.workflowG, 'mem')
+            mem_backupType = nx.get_node_attributes(self.App.workflowG, 'config_type')
             mem_type_backup = ""
-            print('mem_backup public: ', mem_backup_public_maximal_mem_configuration, mem_backupType_public_maximal_mem_configuration)
-            print('mem_backup private: ', mem_backup_private_minimal_mem_configuration, mem_backupType_private_minimal_mem_configuration)
+            print('mem_backup', mem_backup)
+            print('mem_backupType', mem_backupType)
             
-            
-            self.update_App_workflow_mem_rt(self.App, self.public_maximal_mem_configuration, "public", True)
-            
-            for node in critical_path_perf: #get nodes in a criticle path -> process single node of criticle path
+            for node in critical_path: #get nodes in a criticle path -> process single node of criticle path
               
                 #{Mem1:costReduction,Mem2:costReduction} for node x
                 cost_reduction_of_each_mem_config = {}
-                # rt__reduction_of_each_mem_config = {}
                 # print('cost_reduction_of_each_mem_config AFTER DEFINED', cost_reduction_of_each_mem_config) 
                 
                 #loop with available public memories for selected node of criticle path
                 for mem in self.App.workflowG.nodes[node]['public_available_mem']:
-                    # print(mem)
-                    if (mem >= mem_backup_public_maximal_mem_configuration[node]):
-                        # print('break, avoid larger memories BREAK public')
+                    if (mem >= mem_backup[node]):
+                        # print('break, avoid larger memories BREAK')
                         break # Our intention is reduce cost -> avoid larger memories
-                    mem_type_backup = mem_backupType_public_maximal_mem_configuration[node]
+                    mem_type_backup = mem_backupType[node]
                     self.update_App_workflow_mem_rt(self.App, {node: mem}, 'public', True)  #update memory of that node with available mem
                     self.App.get_simple_dag()                 #produce new RT with helpof simple Dag
                     temp_avg_rt = self.App.get_avg_rt()       
                     increased_rt = temp_avg_rt - current_avg_rt #Increase in RT
-                    # print(temp_avg_rt, increased_rt, performance_surplus)
                     temp_avg_cost = self.App.get_avg_cost()
                     cost_reduction = current_cost - temp_avg_cost #Reduction in cost
                     # print(mem, ' public', 'INCREASED RT:', increased_rt, '   COST REDUCTION:', cost_reduction)
@@ -423,23 +440,22 @@ class PerfOpt:
                     # print('********PUBLIC****inc rt, per surplus**************', increased_rt, performance_surplus)
                     # print('******PUBLIC********cost_reduction****', mem, "     ", temp_avg_cost,  cost_reduction)
 
-                    if (increased_rt < performance_surplus): 
-                        # print("come under if  irt < ps")         ##### cost reduce
-                        if iterations_count > 3:
+                    if (increased_rt < performance_surplus):          ##### cost reduce
+                        if iterations_count > 12:
                             if cost_reduction > 0:
                                 cost_reduction_of_each_mem_config[str(mem) + ' public'] = (cost_reduction, increased_rt)
                         # print('increased_rt < performance_surplus and cost_reduction > 0')
                         else: 
                             cost_reduction_of_each_mem_config[str(mem) + ' public'] = (cost_reduction, increased_rt)
 
-                self.update_App_workflow_mem_rt(self.App, {node: mem_backup_public_maximal_mem_configuration[node]}, mem_type_backup, True)
+                self.update_App_workflow_mem_rt(self.App, {node: mem_backup[node]}, mem_type_backup, True)
 
                 #loop with available private memories for selected node of criticle path
                 for mem in self.App.workflowG.nodes[node]['private_available_mem']:
-                    if (mem >= mem_backup_public_maximal_mem_configuration[node]):
-                        # print('break, avoid larger memories BREAK private')
+                    if (mem >= mem_backup[node]):
+                        # print('break, avoid larger memories BREAK')
                         break # Our intention is reduce cost -> avoid larger memories
-                    mem_type_backup = mem_backupType_public_maximal_mem_configuration[node]
+                    mem_type_backup = mem_backupType[node]
                     self.update_App_workflow_mem_rt(self.App, {node: mem}, 'private', True)  #update memory of that node with available mem
                     self.App.get_simple_dag()                 #produce new RT with helpof simple Dag
                     temp_avg_rt = self.App.get_avg_rt()       
@@ -461,7 +477,7 @@ class PerfOpt:
                         else:
                             cost_reduction_of_each_mem_config[str(mem)+ ' private']= (cost_reduction, increased_rt)
                         
-                self.update_App_workflow_mem_rt(self.App, {node: mem_backup_public_maximal_mem_configuration[node]}, mem_type_backup, True) #Reset memConfigurations
+                self.update_App_workflow_mem_rt(self.App, {node: mem_backup[node]}, mem_type_backup, True) #Reset memConfigurations
                 
                 # print("cost_reduction_of_each_mem_config AFTER LOOPS", cost_reduction_of_each_mem_config)
               
@@ -472,98 +488,16 @@ class PerfOpt:
                         [item[1] for item in cost_reduction_of_each_mem_config.values() if
                          item[0] == max_cost_reduction]) #Get incresed RT under Max_cost reduction
                     # max_cost_reduction_memType = cost_reduction_of_each_mem_config[cost_reduction_of_each_mem_config.index(min_increased_rt_under_MAX_cost_reduction)]
-                    print('max reduction for each node: ', max_cost_reduction, 'min_increased_rt_under_MAX_cost_reduction: ', min_increased_rt_under_MAX_cost_reduction)
+                    print('max cost reduction for each node: ', max_cost_reduction, 'min_increased_rt_under_MAX_cost_reduction: ', min_increased_rt_under_MAX_cost_reduction)
                     reversed_dict = dict(
                         zip(cost_reduction_of_each_mem_config.values(), cost_reduction_of_each_mem_config.keys()))
-                    max_reduction_of_each_node[node] = (
+                    max_cost_reduction_of_each_node[node] = (
                         reversed_dict[(max_cost_reduction, min_increased_rt_under_MAX_cost_reduction)],
                         max_cost_reduction,
                         min_increased_rt_under_MAX_cost_reduction)
+                print("ADDED MEMORY: ", max_cost_reduction_of_each_node)
                     
-                print("ADDED MEMORY AFTER PERF: ", max_reduction_of_each_node)
-
-            
-            # self.update_App_workflow_mem_rt(self.App, self.private_minimal_mem_configuration, "private", True)
-
-            # for node in critical_path_cost:
-            #     # print('----------------------come under cp for loop-----------------------', self.App.workflowG.nodes[node]['config_type'])
-
-            #     avg_rt_reduction_of_each_mem_config = {}
-
-            #     for mem in reversed(self.App.workflowG.nodes[node]['private_available_mem']):
-            #             # print('mem---------  :', mem)
-            #             if mem == 0:
-            #                 break
-            #             # print('----------------------come under private mem for loop-----------------------')
-
-            #             if (mem <= mem_backup_private_minimal_mem_configuration[node]):
-            #                 # print('private cost: ',mem, mem_backup_private_minimal_mem_configuration[node])
-            #                 # print('$$-----BREAK-----$$')
-            #                 break
-
-            #             mem_type_backup = mem_backupType_private_minimal_mem_configuration[node]
-
-            #             self.update_App_workflow_mem_rt(self.App, {node: mem}, 'private', True)
-            #             increased_cost = self.App.get_avg_cost() - current_cost
-            #             # print('--------==============----increased_cost------=================--------', increased_cost)
-            #             if (increased_cost < cost_surplus):
-            #                 self.App.get_simple_dag()
-            #                 rt_reduction = current_avg_rt - self.App.get_avg_rt()
-            #                 # print('--------++++++++++++----rt_reduction------++++++++++++++++++++++++--------', rt_reduction)
-            #                 if (rt_reduction > 0):
-            #                     if iterations_count > 12:
-            #                         if increased_cost > 0:
-            #                             avg_rt_reduction_of_each_mem_config[str(mem)+ ' private'] = (rt_reduction, increased_cost)
-            #                     else:
-            #                             avg_rt_reduction_of_each_mem_config[str(mem)+ ' private'] = (rt_reduction, increased_cost)
-
-            #                     # print('--------++++++++++++----avg_rt_reduction_of_each_mem_config ADDED------++++++++++++++++++++++++--------', mem, increased_cost, rt_reduction)
-            #     self.update_App_workflow_mem_rt(self.App, {node: mem_backup_private_minimal_mem_configuration[node]}, mem_type_backup, True)
-
-                
-            #     for mem in reversed(self.App.workflowG.nodes[node]['public_available_mem']):
-            #             # print('----------------------come under public mem for loop-----------------------')
-
-            #             if (mem <= mem_backup_private_minimal_mem_configuration[node]):
-            #                 # print('public cost: ', mem, mem_backup_private_minimal_mem_configuration[node])
-            #                 # print('$$-----BREAK-----$$')
-            #                 break
-            #             mem_type_backup = mem_backupType_private_minimal_mem_configuration[node]
-
-            #             self.update_App_workflow_mem_rt(self.App, {node: mem}, 'public', True)
-            #             increased_cost = self.App.get_avg_cost() - current_cost
-            #             if (increased_cost < cost_surplus):
-            #                 self.App.get_simple_dag()
-            #                 rt_reduction = current_avg_rt - self.App.get_avg_rt()
-            #                 if (rt_reduction > 0):
-            #                     if iterations_count > 12:
-            #                         if increased_cost > 0:
-            #                             avg_rt_reduction_of_each_mem_config[str(mem)+ ' public'] = (rt_reduction, increased_cost)
-            #                     else:
-            #                             avg_rt_reduction_of_each_mem_config[str(mem)+ ' public'] = (rt_reduction, increased_cost)
-
-            #     self.update_App_workflow_mem_rt(self.App, {node: mem_backup_private_minimal_mem_configuration[node]}, mem_type_backup, True)
-
-            #     print('++++++++++++++++++++avg_rt_reduction_of_each_mem_config++++++++++++', avg_rt_reduction_of_each_mem_config)
-
-            #     if (len(avg_rt_reduction_of_each_mem_config) != 0):
-            #         # print('--------------------come under if len check------------------')
-            #         max_rt_reduction = np.max([item[0] for item in avg_rt_reduction_of_each_mem_config.values()])
-            #         min_increased_cost_under_MAX_rt_reduction = np.min(
-            #             [item[1] for item in avg_rt_reduction_of_each_mem_config.values() if
-            #              item[0] == max_rt_reduction])
-            #         print('max reduction for each node: ', max_rt_reduction, 'min_increased_rt_under_MAX_cost_reduction: ', min_increased_cost_under_MAX_rt_reduction)
-
-            #         reversed_dict = dict(zip(avg_rt_reduction_of_each_mem_config.values(),
-            #                                  avg_rt_reduction_of_each_mem_config.keys()))
-            #         max_reduction_of_each_node[node] = (
-            #             reversed_dict[(max_rt_reduction, min_increased_cost_under_MAX_rt_reduction)],
-            #             max_rt_reduction,
-            #             min_increased_cost_under_MAX_rt_reduction)
-                    
-            #     print("ADDED MEMORY AFTER COST: ", max_reduction_of_each_node)
-                    
-            if (len(max_reduction_of_each_node) == 0):
+            if (len(max_cost_reduction_of_each_node) == 0):
                 if (order >= self.simple_paths_num - 1):
                     break
                 else:
@@ -571,15 +505,15 @@ class PerfOpt:
                     continue
            
 
-            print("max_cost_reduction_of_each_node", max_reduction_of_each_node)
-            max_cost_reduction = np.max([item[1] for item in max_reduction_of_each_node.values()])
+            print("max_cost_reduction_of_each_node", max_cost_reduction_of_each_node)
+            max_cost_reduction = np.max([item[1] for item in max_cost_reduction_of_each_node.values()])
             print("max_cost_reduction", max_cost_reduction)
             min_increased_rt_under_MAX_cost_reduction = np.min(
-                [item[2] for item in max_reduction_of_each_node.values() if item[1] == max_cost_reduction])
+                [item[2] for item in max_cost_reduction_of_each_node.values() if item[1] == max_cost_reduction])
             print("min_increased_rt_under_MAX_cost_reduction", min_increased_rt_under_MAX_cost_reduction)
 
 
-            target_mem_list = [item[0] for item in max_reduction_of_each_node.values() if
+            target_mem_list = [item[0] for item in max_cost_reduction_of_each_node.values() if
                                  item[1] == max_cost_reduction 
                                  and 
                                  item[2] == min_increased_rt_under_MAX_cost_reduction]
@@ -596,8 +530,8 @@ class PerfOpt:
             print("target_mem", target_mem)
             target_node = -1
 
-            for key1 in max_reduction_of_each_node:
-                if max_reduction_of_each_node[key1][1] == max_cost_reduction:
+            for key1 in max_cost_reduction_of_each_node:
+                if max_cost_reduction_of_each_node[key1][1] == max_cost_reduction:
                     target_node = key1
 
             print("target_node", target_node)
@@ -608,13 +542,15 @@ class PerfOpt:
             target_changes += str(target_mem)
             target_changes += ' '
             target_changes += target_mem_type
-            target_changes += ",  " 
+            target_changes += " " 
             
             self.update_App_workflow_mem_rt(self.App, {target_node: target_mem}, target_mem_type, True)
-            max_cost_reduction = max_reduction_of_each_node[target_node][1]
-            min_increased_rt_under_MAX_cost_reduction = max_reduction_of_each_node[target_node][2]
+            max_cost_reduction = max_cost_reduction_of_each_node[target_node][1]
+            min_increased_rt_under_MAX_cost_reduction = max_cost_reduction_of_each_node[target_node][2]
+            print("cost, perf surplus reduction: ", max_cost_reduction, min_increased_rt_under_MAX_cost_reduction)
             current_cost = current_cost - max_cost_reduction
             performance_surplus = performance_surplus - min_increased_rt_under_MAX_cost_reduction
+            cost_surplus = cost_surplus - max_cost_reduction
             current_avg_rt = current_avg_rt + min_increased_rt_under_MAX_cost_reduction
             current_e2ert_cost_BCR = max_cost_reduction / min_increased_rt_under_MAX_cost_reduction
             
