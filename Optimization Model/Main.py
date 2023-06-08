@@ -75,17 +75,17 @@ optimizer = PerfOpt(App)
 print('Total Cost Under Performance Constraint')
 
 Performance_constraint = 4000
-cost_constraint = 90
+Cost_constraint = 90
 
-both_Performance_constraint = 6000
-both_Cost_constraint = 60
+Both_Performance_constraint = 6000
+Both_Cost_constraint = 60
 
 
 configuration_under_perf_const = optimizer.PrerformanceConstraintModel(Performance_constraint)
 perf_RT, perf_CT, perf_memType, perf_mem, perf_iterations_count, perf_target_changes = configuration_under_perf_const # for graph purposes
 
-configuration_under_cost_const = optimizer.CostConstraintModel(cost_constraint)
+configuration_under_cost_const = optimizer.CostConstraintModel(Cost_constraint)
 cost_RT, cost_CT, cost_memType, cost_mem, cost_iterations_count, cost_target_changes = configuration_under_cost_const
 
-configuration_under_perfCost_const = optimizer.Cost_Performance_ConstraintModel(both_Performance_constraint, both_Cost_constraint)
+configuration_under_perfCost_const = optimizer.Cost_Performance_ConstraintModel(Both_Performance_constraint, Both_Cost_constraint)
 perfCost_RT, perfCost_CT, perfCost_memType, perfCost_mem, perfCost_iterations_count, perfCost_target_changes = configuration_under_perfCost_const
