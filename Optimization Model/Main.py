@@ -45,6 +45,7 @@ f4_pf = PerformanceProfile.f4_pf
 f5_pf = PerformanceProfile.f5_pf
 f6_pf = PerformanceProfile.f6_pf
 
+# adding performance profile for all nodes
 App6_G.nodes[1]['private_perf_profile'] = f1_pf['private']
 App6_G.nodes[2]['private_perf_profile'] = f2_pf['private']
 App6_G.nodes[3]['private_perf_profile'] = f3_pf['private']
@@ -65,27 +66,26 @@ App6_G.nodes[6]['public_perf_profile'] = f6_pf['public']
 import AppWorkflow
 
 
-App = AppWorkflow.ServerlessAppWorkflow(G=App6_G.copy(), delayType='SFN') # need to Change Delay Type
-rt_constraint = 4000
+App = ServerlessAppWorkflow(G=App6_G.copy(), delayType='SFN') # need to Change Delay Type
+
+optimizer = PerfOpt(App)
+
+# Performance constraint is 6400 ms
+
+print('Total Cost Under Performance Constraint')
+
+Performance_constraint = 4000
 cost_constraint = 90
 
-# Best Cost under Performance Constraint Model
-import BCPC_model
-BCPC_optimizer = BCPC_model.PerfOpt(App)
+both_Performance_constraint = 6000
+both_Cost_constraint = 60
 
-configuration_under_perf_const = BCPC_optimizer.PrerformanceConstraintModel(rt_constraint)
-perf_RT, perf_CT, perf_memType, perf_mem, perf_iterations_count, perf_target_changes = configuration_under_perf_const
 
-# Best Performance under Budget Constraint Model
-import BPBC_model
-BPBC_optimizer = BPBC_model.PerfOpt(App)
+configuration_under_perf_const = optimizer.PrerformanceConstraintModel(Performance_constraint)
+perf_RT, perf_CT, perf_memType, perf_mem, perf_iterations_count, perf_target_changes = configuration_under_perf_const # for graph purposes
 
-configuration_under_cost_const = BPBC_optimizer.CostConstraintModel(cost_constraint)
+configuration_under_cost_const = optimizer.CostConstraintModel(cost_constraint)
 cost_RT, cost_CT, cost_memType, cost_mem, cost_iterations_count, cost_target_changes = configuration_under_cost_const
 
-# Optimized Under performance and Cost constraint
-# import CPC_model
-# CPC_optimizer = CPC_model.PerfOpt(App)
-
-# configuration_under_perfCost_const = CPC_optimizer.Cost_Performance_ConstraintModel(rt_constraint, cost_constraint)
-# perfCost_RT, perfCost_CT, perfCost_memType, perfCost_mem, perfCost_iterations_count, perfCost_target_changes = configuration_under_perfCost_const
+configuration_under_perfCost_const = optimizer.Cost_Performance_ConstraintModel(both_Performance_constraint, both_Cost_constraint)
+perfCost_RT, perfCost_CT, perfCost_memType, perfCost_mem, perfCost_iterations_count, perfCost_target_changes = configuration_under_perfCost_const
