@@ -412,7 +412,8 @@ class ServerlessAppWorkflow:
             tp_list = [out_edges[item] for item in out_edges]
             if (round(np.sum(tp_list), 8) != 1.0):
                 raise Exception(f'Invalid Self-loop: Node:{aSelfLoop[0]}')
-            new_rt = aSelfLoop[2] / (1 - aSelfLoop[1])
+            new_rt= aSelfLoop[2] + aSelfLoop[1] * aSelfLoop[2] + 0.5 * (aSelfLoop[1] ** 2) * aSelfLoop[2]
+            # +(1/6) * (aSelfLoop[1] ** 3) * aSelfLoop[2]   ## 3rd term
             self.simpleDAG.nodes[aSelfLoop[0]]['rt'] = new_rt
             self.simpleDAG.remove_edge(aSelfLoop[0], aSelfLoop[0])
             del out_edges[(aSelfLoop[0], aSelfLoop[0])]
@@ -578,7 +579,9 @@ class ServerlessAppWorkflow:
             tp_list = [out_edges[item] for item in out_edges]
             if (round(np.sum(tp_list), 4) > 1.0):
                 raise Exception(f'Invalid Loop: Node:{key[1]}')
-            new_rt = (self.DAGrt[key[1]] + loop_tp * cycles_dict[key]) / (1 - loop_tp)
+            # new_rt = (self.DAGrt[key[1]] + loop_tp * cycles_dict[key]) / (1 - loop_tp)
+            new_rt = self.DAGrt[key[1]] / (1 - loop_tp) + loop_tp * cycles_dict[key] / (1 - loop_tp)**2
+            # new_rt = self.DAGrt[key[1]] / (1 - loop_tp - exit_tp) + loop_tp * cycles_dict[key] / (1 - loop_tp - exit_tp)**2 + exit_tp * self.DAGrt[key[1]] / (1 - loop_tp - exit_tp)
             self.simpleDAG.nodes[key[1]]['rt'] = new_rt
             self.simpleDAG.remove_edge(key[1], key[0])
             processed = True
