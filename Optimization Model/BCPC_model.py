@@ -292,7 +292,7 @@ class PerfOpt:
         #example ->[2701.49804286  499.40599029 2101.97484571]
         
         #least criticle->return min (rt * prob) of simple paths 
-        
+        # print(tp_list, rt_list, prrt_list)
         if (leastCritical):
             PRCP = np.argsort(prrt_list)[order]
             
@@ -367,7 +367,10 @@ class PerfOpt:
         target_changes = ""
         
         # print('--------------------Before Going While Loop------------------------------------')
-        # self.drawGraph(App.workflowG)
+        # print(App.workflowG)
+        self.drawGraph(App.workflowG)
+        self.App.get_simple_dag() 
+        self.drawGraph(self.App.simpleDAG)
         #Until Negotiatable RT get finished
         while (round(performance_surplus, 4) >= 0):
             iterations_count += 1
@@ -508,7 +511,7 @@ class PerfOpt:
             target_changes += str(target_mem)
             target_changes += ' '
             target_changes += target_mem_type
-            target_changes += ",  " 
+            target_changes += " " 
             
             self.update_App_workflow_mem_rt(self.App, {target_node: target_mem}, target_mem_type, True)
             max_cost_reduction = max_cost_reduction_of_each_node[target_node][1]
