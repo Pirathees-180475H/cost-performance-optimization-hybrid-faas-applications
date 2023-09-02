@@ -5,3 +5,9 @@ Cloud users are facing the practical problem of finding the tradeoff between the
 
 There are no such tools for suggestions to select the cloud platforms to deploy their functions over the hybrid cloud concept according to the tradeoff of these factors. Users need a platform that can give better suggestions for distributing the work over a hybrid cloud infrastructure according to their demands (an application with constraints) with tradeoffs between these two factors (cost and performance). With these suggestions, cloud users can configure their FaaS application to optimize the cost with their constraints.
 
+## Approach
+
+![Image](https://github.com/Pirathees-180475H/cost-performance-optimization-hybrid-faas-applications/blob/a69958005afd00c3bfd8a705e2d42dc7d3620883/pic/Approch.png)
+
+
+
