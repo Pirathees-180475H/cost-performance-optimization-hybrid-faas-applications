@@ -1,4 +1,4 @@
-# cost-performance-optimization-hybrid-faas-applications
+# Cost-Performance-Optimization-Of-Hybrid Cloud-FAAS-Applications
 Final year project developed to find sweet spot hybrid cloud configurations for serverless FaaS applications
 
 Cloud users are facing the practical problem of finding the tradeoff between the  limitation of budget and the expected performance of serverless applications. Since the significant factors are cost and performance.The challenge is to find the sweet spot, the tradeoff between these two factors. By deciding which jobs will run on public clouds and which are running through the private clouds, we can lead to the sweet spot. This sweet spot will define the tradeoff between the cost and performance of executing a FaaS application in a hybrid cloud environment.
