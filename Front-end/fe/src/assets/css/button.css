@@ -1,0 +1,20 @@
+.custom-button {
+	background-color: #349eff;
+	color: #ffffff;
+	padding: 8px 16px;
+	border: none;
+	border-radius: 4px;
+	font-size: 16px;
+	cursor: pointer;
+	box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .custom-button:hover {
+	background-color: #2c8be5;
+  }
+  
+  .custom-button:focus {
+	outline: none;
+	box-shadow: 0px 0px 4px rgba(52, 158, 255, 0.8);
+  }
+  
